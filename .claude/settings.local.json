@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --check js\\\\data.js)",
+      "PowerShell(node --check js\\\\game.js)",
+      "PowerShell(\\(Get-Command python -ErrorAction SilentlyContinue\\).Source; \\(Get-Command py -ErrorAction SilentlyContinue\\).Source)",
+      "mcp__Claude_Preview__preview_start",
+      "PowerShell(Add-Type -AssemblyName PresentationCore; $fs = [IO.File]::OpenRead\\('C:\\\\JosoSchoolSimulator\\\\picture\\\\自宅.jpg'\\); try { $dec = [Windows.Media.Imaging.BitmapDecoder]::Create\\($fs, [Windows.Media.Imaging.BitmapCreateOptions]::None, [Windows.Media.Imaging.BitmapCacheOption]::OnLoad\\); $enc = New-Object Windows.Media.Imaging.JpegBitmapEncoder; $enc.QualityLevel = 90; $enc.Frames.Add\\([Windows.Media.Imaging.BitmapFrame]::Create\\($dec.Frames[0]\\)\\); $out = [IO.File]::Create\\('C:\\\\JosoSchoolSimulator\\\\picture\\\\自宅_conv.jpg'\\); $enc.Save\\($out\\); $out.Close\\(\\); 'CONVERTED OK' } catch { \"FAILED: $\\($_.Exception.Message\\)\" } finally { $fs.Close\\(\\) })",
+      "Bash(python -c \"print\\('hello'\\)\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" -c \"print\\('hello'\\)\")",
+      "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" _inspect.py)",
+      "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" -m pip install numpy --quiet)",
+      "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" _dealpha.py)",
+      "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" _check_kotan.py)"
+    ]
+  }
+}

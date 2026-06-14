@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <!-- 帰りの電車・車内 -->
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef0f3"/>
+      <stop offset="1" stop-color="#d6dade"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b9b2a6"/>
+      <stop offset="1" stop-color="#978f82"/>
+    </linearGradient>
+    <linearGradient id="view" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd9a0"/>
+      <stop offset="0.6" stop-color="#ffeccb"/>
+      <stop offset="1" stop-color="#cdd98e"/>
+    </linearGradient>
+  </defs>
+  <!-- 壁・天井 -->
+  <rect width="1280" height="520" fill="url(#wall)"/>
+  <rect width="1280" height="60" fill="#e3e6ea"/>
+  <rect y="58" width="1280" height="6" fill="#c2c7cd"/>
+  <!-- 荷棚 -->
+  <rect y="118" width="1280" height="10" fill="#aab0b8"/>
+  <g stroke="#aab0b8" stroke-width="5" opacity="0.8">
+    <path d="M60 118 L100 80" /><path d="M260 118 L300 80"/><path d="M460 118 L500 80"/>
+    <path d="M660 118 L700 80"/><path d="M860 118 L900 80"/><path d="M1060 118 L1100 80"/>
+  </g>
+  <!-- 窓（車窓は夕方の田園） -->
+  <g>
+    <rect x="50" y="150" width="340" height="200" rx="14" fill="url(#view)" stroke="#9aa0a8" stroke-width="8"/>
+    <rect x="470" y="150" width="340" height="200" rx="14" fill="url(#view)" stroke="#9aa0a8" stroke-width="8"/>
+    <rect x="890" y="150" width="340" height="200" rx="14" fill="url(#view)" stroke="#9aa0a8" stroke-width="8"/>
+  </g>
+  <!-- 車窓の景色 -->
+  <g fill="#8aa45e" opacity="0.9">
+    <ellipse cx="150" cy="320" rx="90" ry="26"/><ellipse cx="330" cy="328" rx="70" ry="20"/>
+    <ellipse cx="570" cy="322" rx="86" ry="24"/><ellipse cx="760" cy="330" rx="60" ry="18"/>
+    <ellipse cx="990" cy="324" rx="80" ry="22"/><ellipse cx="1170" cy="330" rx="66" ry="19"/>
+  </g>
+  <circle cx="700" cy="200" r="30" fill="#ffe9b8"/>
+  <!-- つり革 -->
+  <g>
+    <g stroke="#8e959d" stroke-width="6">
+      <path d="M140 60 V 130"/><path d="M340 60 V 130"/><path d="M540 60 V 130"/>
+      <path d="M740 60 V 130"/><path d="M940 60 V 130"/><path d="M1140 60 V 130"/>
+    </g>
+    <g fill="none" stroke="#f5f6f8" stroke-width="10">
+      <circle cx="140" cy="155" r="24"/><circle cx="340" cy="155" r="24"/><circle cx="540" cy="155" r="24"/>
+      <circle cx="740" cy="155" r="24"/><circle cx="940" cy="155" r="24"/><circle cx="1140" cy="155" r="24"/>
+    </g>
+  </g>
+  <!-- 座席 -->
+  <rect x="0" y="400" width="1280" height="36" fill="#3f4d8c"/>
+  <g fill="#4a5ba6">
+    <rect x="0" y="370" width="1280" height="36" rx="10"/>
+  </g>
+  <g fill="#36437a">
+    <rect x="0" y="436" width="1280" height="60"/>
+  </g>
+  <g fill="#2c365f" opacity="0.5">
+    <rect x="180" y="370" width="8" height="126"/><rect x="420" y="370" width="8" height="126"/>
+    <rect x="660" y="370" width="8" height="126"/><rect x="900" y="370" width="8" height="126"/>
+    <rect x="1140" y="370" width="8" height="126"/>
+  </g>
+  <!-- 床 -->
+  <rect y="496" width="1280" height="224" fill="url(#floor)"/>
+  <rect y="496" width="1280" height="8" fill="#7e776b"/>
+  <path d="M0 720 L240 496 H 1040 L1280 720 Z" fill="#a59d90" opacity="0.45"/>
+  <!-- 広告 -->
+  <rect x="500" y="74" width="280" height="38" rx="6" fill="#fff" stroke="#c2c7cd" stroke-width="3"/>
+  <text x="640" y="100" font-size="20" text-anchor="middle" fill="#888" font-family="sans-serif">常磐線 ─ 各駅停車</text>
+</svg>

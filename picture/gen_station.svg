@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <!-- 荒川沖駅ホーム（夕方） -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb55c"/>
+      <stop offset="0.45" stop-color="#ffd9a0"/>
+      <stop offset="1" stop-color="#fff3dc"/>
+    </linearGradient>
+    <linearGradient id="plat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b9b2ac"/>
+      <stop offset="1" stop-color="#8e8780"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="460" fill="url(#sky)"/>
+  <circle cx="980" cy="180" r="58" fill="#ffe9b8" opacity="0.95"/>
+  <circle cx="980" cy="180" r="90" fill="#ffdf9e" opacity="0.35"/>
+  <!-- 遠景の田園と林 -->
+  <rect y="380" width="1280" height="80" fill="#cdbf7a"/>
+  <rect y="420" width="1280" height="40" fill="#b8c878"/>
+  <g fill="#7a9456">
+    <ellipse cx="120" cy="392" rx="120" ry="38"/>
+    <ellipse cx="320" cy="398" rx="90" ry="30"/>
+    <ellipse cx="1180" cy="390" rx="140" ry="42"/>
+  </g>
+  <!-- 架線柱 -->
+  <g stroke="#6b6f76" stroke-width="8" fill="none" opacity="0.85">
+    <path d="M210 120 V 470"/>
+    <path d="M210 150 H 330"/>
+    <path d="M860 100 V 465"/>
+    <path d="M860 135 H 980"/>
+  </g>
+  <g stroke="#555a61" stroke-width="2.5" opacity="0.7">
+    <path d="M0 160 Q 640 195 1280 150" fill="none"/>
+    <path d="M0 185 Q 640 220 1280 175" fill="none"/>
+  </g>
+  <!-- 線路 -->
+  <rect y="460" width="1280" height="70" fill="#9b948c"/>
+  <g fill="#7c766f">
+    <rect x="0" y="470" width="1280" height="8"/>
+    <rect x="0" y="500" width="1280" height="8"/>
+  </g>
+  <g fill="#5e5952">
+    <rect x="20" y="466" width="26" height="56"/><rect x="120" y="466" width="26" height="56"/>
+    <rect x="220" y="466" width="26" height="56"/><rect x="320" y="466" width="26" height="56"/>
+    <rect x="420" y="466" width="26" height="56"/><rect x="520" y="466" width="26" height="56"/>
+    <rect x="620" y="466" width="26" height="56"/><rect x="720" y="466" width="26" height="56"/>
+    <rect x="820" y="466" width="26" height="56"/><rect x="920" y="466" width="26" height="56"/>
+    <rect x="1020" y="466" width="26" height="56"/><rect x="1120" y="466" width="26" height="56"/>
+    <rect x="1220" y="466" width="26" height="56"/>
+  </g>
+  <rect y="472" width="1280" height="5" fill="#c8cdd4"/>
+  <rect y="502" width="1280" height="5" fill="#c8cdd4"/>
+  <!-- ホーム -->
+  <rect y="530" width="1280" height="190" fill="url(#plat)"/>
+  <rect y="530" width="1280" height="14" fill="#d9d4ce"/>
+  <rect y="548" width="1280" height="22" fill="#e8c84a"/>
+  <g fill="#d4b53a">
+    <rect x="0" y="548" width="1280" height="3"/>
+    <rect x="0" y="567" width="1280" height="3"/>
+  </g>
+  <!-- 駅名標 -->
+  <g>
+    <rect x="490" y="180" width="14" height="350" fill="#3f4750"/>
+    <rect x="780" y="180" width="14" height="350" fill="#3f4750"/>
+    <rect x="455" y="170" width="375" height="120" rx="10" fill="#ffffff" stroke="#3f4750" stroke-width="6"/>
+    <text x="642" y="225" font-size="46" text-anchor="middle" fill="#222" font-family="sans-serif" font-weight="bold">荒 川 沖</text>
+    <text x="642" y="262" font-size="22" text-anchor="middle" fill="#555" font-family="sans-serif">あらかわおき</text>
+    <rect x="455" y="276" width="375" height="14" fill="#2e8b57"/>
+  </g>
+  <!-- ベンチ -->
+  <g>
+    <rect x="950" y="600" width="240" height="18" rx="6" fill="#4a6fa5"/>
+    <rect x="950" y="636" width="240" height="14" rx="5" fill="#4a6fa5"/>
+    <rect x="962" y="600" width="14" height="100" fill="#39424d"/>
+    <rect x="1164" y="600" width="14" height="100" fill="#39424d"/>
+  </g>
+  <!-- 街灯 -->
+  <g fill="#39424d">
+    <rect x="120" y="300" width="12" height="300"/>
+    <rect x="92" y="288" width="68" height="20" rx="9"/>
+  </g>
+  <ellipse cx="126" cy="298" rx="26" ry="8" fill="#fff2c2" opacity="0.9"/>
+</svg>
