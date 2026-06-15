@@ -104,6 +104,7 @@ function bgmPlay(key) {
 }
 
 function bgmForEvent(ev, isRandom) {
+  if (ev && ev.bgm) return ev.bgm;               // 動的イベントは個別指定を優先
   if (isRandom) return RANDOM_BGM[ev.id] || "everyday";
   return WEEKLY_BGM[S ? S.week : 0] || "everyday";
 }
@@ -131,6 +132,14 @@ function newState(name, cls, typeId) {
     log: [],
     weekDelta: {},
     weekRel: {},
+    // --- 学校生活・恋愛/進路の重大分岐（life.js）---
+    schoolEval: 70,    // 学校評価 0-100
+    trouble: 0,        // 問題行動値 0-100
+    attendance: 100,   // 出席状況 0-100
+    partner: null,     // 交際相手のNPC id
+    romanceStart: null,// 交際開始週
+    lifeEvent: null,   // 進行中の重大イベント { stage, choice, week, theme }
+    route: null,       // 確定した進路: continue / path_change / leave
   };
 }
 
@@ -175,10 +184,12 @@ function applyRel(rel) {
   }
 }
 
-/* テスト順位計算（5月4週で使用） */
+/* テスト順位計算（結果発表イベントの本文で使用）
+ * 採点済みなら実際の順位を返す。未採点時は学力からの概算をフォールバック。 */
 window.calcTestRank = function (state) {
+  if (state.testResult && state.testResult.playerRank) return state.testResult.playerRank;
   const g = state.stats.gaku;
-  return Math.max(2, Math.min(155, Math.round(160 - g * 1.9)));
+  return Math.max(2, Math.min(GRADE_SIZE - 1, Math.round(GRADE_SIZE - g * 1.0)));
 };
 
 /* ---------- ユーティリティ ---------- */
@@ -452,6 +463,13 @@ function cmdInfo(text) {
 function showMain() {
   ADV = null;
   bgmPlay("everyday");
+  if (typeof ensureLifeState === "function") ensureLifeState(S);
+  // 終端ルート（離脱・進路変更）に入っている途中で再開した場合はその結末へ
+  if ((S.route === "leave" || S.route === "path_change") && typeof showLifeRouteEnding === "function") {
+    return showLifeRouteEnding(S.route);
+  }
+  // 持ち物検査（持ち検）の朝イベント（前週予告・当日）
+  if (typeof mochikenMorning === "function" && mochikenMorning()) return;
   S.weekDelta = {};
   S.weekRel = {};
 
@@ -597,16 +615,29 @@ function doAction(actionId) {
   });
 }
 
+/* 固定イベント後の共通処理: 人生分岐イベント → ランダムイベント → 週末まとめ */
+function afterFixedEvent() {
+  // 恋愛・進路の重大イベント／総合判定を優先チェック（成立すれば内部で続きを呼ぶ）
+  if (typeof maybeLifeEvents === "function" && maybeLifeEvents(continueToRandom)) return;
+  continueToRandom();
+}
+
+function continueToRandom() {
+  const rnd = pickRandomEvent();
+  if (rnd) {
+    S.seen.push(rnd.id);
+    showEvent(rnd, showWeekend, true);
+  } else {
+    showWeekend();
+  }
+}
+
 function startFixedEvent() {
-  showEvent(WEEKLY_EVENTS[S.week], () => {
-    const rnd = pickRandomEvent();
-    if (rnd) {
-      S.seen.push(rnd.id);
-      showEvent(rnd, showWeekend, true);
-    } else {
-      showWeekend();
-    }
-  });
+  // 中間テスト週: 作戦選択 → テスト本番 → 採点（順位は結果発表週まで伏せる）
+  if (S.week === TEST_WEEK && !S.testPrep) return startTestSequence();
+  // 結果発表週: 廊下の掲示板で学年順位を発表
+  if (S.week === TEST_RESULT_WEEK && !(S.testResult && S.testResult.shown)) return showTestBoard();
+  showEvent(WEEKLY_EVENTS[S.week], afterFixedEvent);
 }
 
 function pickRandomEvent() {
@@ -650,9 +681,11 @@ function chooseEvent(idx) {
   applyFx(c.fx);
   applyRel(c.rel);
   if (c.flag) S.flags[c.flag] = true;
-  window.__pendingResult = { fx: c.fx, rel: c.rel };
+  if (c.stress) applyStress(c.stress);
+  if (typeof c.fn === "function") c.fn(S);     // 任意の追加処理（人生分岐などで使用）
+  window.__pendingResult = { fx: c.fx, rel: c.rel, stress: c.stress || 0 };
 
-  let lines = parseLines(c.text);
+  let lines = parseLines(resolveText(c.text));
   if (ev.after) lines = lines.concat(parseLines(ev.after));
 
   showAdv({
@@ -662,7 +695,7 @@ function chooseEvent(idx) {
     lines,
     onDone: () => {
       const r = window.__pendingResult;
-      showResultOverlay(r.fx, r.rel, 0, "つづく", "finishEvent");
+      showResultOverlay(r.fx, r.rel, r.stress, c.nextLabel || "つづく", "finishEvent");
     },
   });
 }
@@ -748,6 +781,7 @@ function showEnding() {
         ${titleHtml}
         <h3>仲良くなった人たち</h3>
         ${friends}
+        ${typeof lifeEndingSection === "function" ? lifeEndingSection() : ""}
         <h3>最終ステータス</h3>
         <div class="stats">${statRows}</div>
         <h3>3か月の記録</h3>
