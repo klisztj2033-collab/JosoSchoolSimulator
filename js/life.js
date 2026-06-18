@@ -60,7 +60,7 @@ function shouldTriggerLifeEvent() {
   if (!S.partner || S.week < 8) return false;     // 交際中・終盤
   if (romanceDuration() < 2) return false;        // ある程度長く続いた関係
   let p = 0.30;                                   // 基本確率
-  if (S.stats.mental < 35) p += 0.12;             // メンタルが低いと起こりやすい
+  if (S.stats.mental < 350) p += 0.12;            // メンタルが低いと起こりやすい（0〜1000）
   return Math.random() < p;
 }
 
@@ -84,7 +84,7 @@ function maybeLifeEvents(next) {
   // 交際相手が未確定 → 恋愛成立イベント
   if (!S.partner) {
     const cand = pickPartnerCandidate();
-    if (cand && S.week >= 5 && S.stats.renai >= 14 && Math.random() < 0.5) {
+    if (cand && S.week >= 5 && S.stats.renai >= 150 && Math.random() < 0.55) {
       showRomanceStart(cand, next);
       return true;
     }
@@ -159,7 +159,7 @@ function startLifeEvent(next) {
         text: `考えるのが怖くて、向き合うのをやめた。学校もなんとなく休みがちになり、気持ちは沈んでいく。\n` +
           `${nm}との関係もぎくしゃくし始めた。問題は、逃げても消えてはくれない。`,
         fx: { mental: -6, ninki: -2, omoide: 1 }, stress: 20, rel: { [pid]: -4 },
-        fn: (S) => { S.schoolEval -= 18; S.trouble += 22; S.attendance -= 25; S.lifeEvent.choice = "B"; S.lifeEvent.stage = "await_judgment"; },
+        fn: (S) => { S.schoolEval -= 12; S.trouble += 16; S.attendance -= 18; S.lifeEvent.choice = "B"; S.lifeEvent.stage = "await_judgment"; },
       },
       {
         label: "C：先生や友達に相談する", nextLabel: "その後の日々へ",
@@ -182,9 +182,9 @@ function startLifeEvent(next) {
 function lifeJudgeScore(choice) {
   let score = S.schoolEval
     - S.trouble
-    + S.stats.mental * 0.4
+    + (S.stats.mental / 10) * 0.4   // 能力は0〜1000なので0〜100換算
     + (S.attendance - 50) * 0.3
-    + S.stats.shinrai * 0.2;
+    + (S.stats.shinrai / 10) * 0.2;
   if (choice === "C")      score += 30; // 相談＝最も安定
   else if (choice === "A") score += 18; // 向き合う＝前向き
   else if (choice === "B") score -= 25; // 逃げる＝悪化
@@ -193,8 +193,8 @@ function lifeJudgeScore(choice) {
 
 function lifeRouteFor(choice) {
   const s = lifeJudgeScore(choice);
-  if (s >= 68) return "continue";      // 継続ルート
-  if (s >= 42) return "path_change";   // 進路変更ルート（転校・休学・別の道）
+  if (s >= 66) return "continue";      // 継続ルート
+  if (s >= 40) return "path_change";   // 進路変更ルート（転校・休学・別の道）
   return "leave";                      // 離脱ルート（学校生活から離れる）
 }
 
@@ -303,7 +303,7 @@ function lifeEndingSection() {
     const surv = S.route === "continue";
     html += `<h3>恋愛</h3>` +
       `<div class="ending-title"><b>${esc(nm)}と交際中</b>` +
-      `<span>${surv ? "将来を考える大きな出来事を、二人で乗り越えた。" : "放課後が、少し特別になった3か月。"}</span></div>`;
+      `<span>${surv ? "将来を考える大きな出来事を、二人で乗り越えた。" : "放課後が、少し特別になった1年。"}</span></div>`;
   }
   if (S.route === "continue") {
     html += `<div class="ending-title"><b>困難を越えて</b>` +

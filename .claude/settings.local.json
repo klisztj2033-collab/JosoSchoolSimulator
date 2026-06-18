@@ -12,7 +12,17 @@
       "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" _inspect.py)",
       "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" -m pip install numpy --quiet)",
       "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" _dealpha.py)",
-      "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" _check_kotan.py)"
+      "Bash(\"C:\\\\Users\\\\maki\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" _check_kotan.py)",
+      "Bash(gh auth *)",
+      "Bash(git config *)",
+      "Bash(git restore *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "PowerShell($node = \\(Get-Command node -ErrorAction SilentlyContinue\\); if \\($node\\) { Write-Output $node.Source } else { Write-Output \"no-node\" }; $py = \\(Get-Command python -ErrorAction SilentlyContinue\\); if \\($py\\) { Write-Output $py.Source } else { Write-Output \"no-python\" })"
     ]
   }
 }

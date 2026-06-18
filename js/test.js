@@ -12,8 +12,15 @@
  *         game.js（S / applyFx / save / showEvent / showAdv / pick / esc など）
  * ========================================================= */
 
-const TEST_WEEK = 6;          // 中間テスト本番（5月3週）
-const TEST_RESULT_WEEK = 7;   // 結果発表（5月4週）
+/* テスト本番週／結果発表週（年間で複数回）。
+ *   index: 週番号 → label: テスト名（タイトル表示・ナレーション用） */
+const TEST_WEEKS = { 6: "1学期中間", 13: "1学期期末" };
+const TEST_RESULT_WEEKS = { 7: "1学期中間", 14: "1学期期末" };
+const TEST_WEEK = 6;          // 最初の中間テスト本番（5月3週）— 互換用
+const TEST_RESULT_WEEK = 7;   // 最初の結果発表（5月4週）— 互換用
+
+function isTestWeek(w)        { return Object.prototype.hasOwnProperty.call(TEST_WEEKS, w); }
+function isTestResultWeek(w)  { return Object.prototype.hasOwnProperty.call(TEST_RESULT_WEEKS, w); }
 
 function tClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function tRand(range) { return (Math.random() * 2 - 1) * range; } // ±range
@@ -122,8 +129,9 @@ function playerTestCondMult() {
 function buildPlayerEntry() {
   const prep = TEST_PREP_OPTIONS.find(o => o.id === S.testPrep);
   const p = {
-    gaku: S.stats.gaku,
-    mental: S.stats.mental,
+    // プレイヤー能力は0〜1000。NPC名簿(0〜100)に合わせて1/10換算する。
+    gaku: tClamp(S.stats.gaku / 10, 0, 100),
+    mental: tClamp(S.stats.mental / 10, 0, 100),
     prepBonus: prep ? prep.studyMod : 0,
     condMult: playerTestCondMult(),
     good: null, bad: null, // プレイヤーは固定の得意/苦手なし
@@ -202,6 +210,8 @@ function computeTestResults() {
 
   const me = entries.find(e => e.isPlayer);
   S.testResult = {
+    week: S.week,
+    label: TEST_WEEKS[S.week] || "定期",
     entries,
     count: entries.length,
     playerRank: me.rank,
@@ -252,8 +262,10 @@ function applyRankEffect() {
     else if (up <= -20){ fx.mental = (fx.mental || 0) - 2; diffText = `前回から${-up}位ダウン……どこかで気が緩んでいたかもしれない。`; }
   }
 
-  applyFx(fx);
-  return { fx, text, diffText };
+  // 1000スケールへ換算して適用（順位報酬を能力に反映）
+  const sfx = (typeof scaleStoryFx === "function") ? scaleStoryFx(fx) : fx;
+  applyFx(sfx);
+  return { fx: sfx, text, diffText };
 }
 
 /* =========================================================
@@ -261,18 +273,87 @@ function applyRankEffect() {
  * ========================================================= */
 function startTestSequence() {
   showTestPrepScreen(() => {
-    // テスト本番（伊藤伝説イベント = WEEKLY_EVENTS[TEST_WEEK]）
-    showEvent(WEEKLY_EVENTS[TEST_WEEK], () => {
+    // テスト本番イベント（伊藤の放屁伝説は「確定」ではなく抽選で発生）
+    showEvent(buildTestEvent(), () => {
       computeTestResults(); // 採点（順位は結果発表週まで伏せる）
       afterFixedEvent();
     });
   });
 }
 
+/* テスト本番イベントを動的生成する。
+ *   伊藤けいすけの放屁イベントは毎回確定ではなく、5%の確率でのみ発生する超レア枠。
+ *   発生した回は、極度の緊張が一瞬で吹き飛ぶ反動で、学力が大きく上昇し、メンタルも
+ *   大きく上向く（緊張のリセット＋謎の集中力ブースト）。発生しない回は「静かなテスト」
+ *   バージョンを表示する。 */
+function buildTestEvent() {
+  const label = TEST_WEEKS[S.week] || "定期";
+  const fart = Math.random() < 0.05; // 放屁伝説は5%の超レア枠
+
+  if (fart) {
+    return {
+      id: "test_ito_fart", place: "教室（テスト中）", bgm: "eerie",
+      title: `${label}テスト — そして伝説へ`,
+      text: `${label}テスト本番。教室は鉛筆の音しかしない極度の静寂に包まれている。\n\n` +
+        "全員が真剣に問題と向き合う中、伊藤けいすけだけは開始10分で机に突っ伏して寝ていた。それだけでも十分すごいのだが——\n\n" +
+        "次の瞬間、静寂の教室に「ブッ」という乾いた音が響き渡った。\n\n" +
+        "伊藤けいすけ、テスト中に、寝ながら、屁をこいた。\n" +
+        "監督の先生の眉がピクリと動く。教室全体の肩が小刻みに震えはじめる。笑ったら負けの極限状態。どうする？",
+      choices: [
+        {
+          label: "笑いをこらえる",
+          text: "机に顔を伏せ、全身全霊で笑いを殺した。肩の震えを抑えるこの数分間、テストよりはるかに難しかった。だがその直後、張りつめていた緊張の糸がふっと切れ、不思議なほど頭が軽くなった。問題が驚くほどスッと頭に入ってくる。後ろの席からも押し殺した嗚咽のような音が聞こえる。みんな戦っていた。",
+          fx: { gaku: 11, mental: 9, omoide: 6, nori: 2 }, rel: { ito: 3 },
+        },
+        {
+          label: "先生に知らせる（なぜ？）",
+          text: "挙手して「先生、伊藤君が……」と言いかけたが、先生は静かに首を振った。「触れるな」という大人の判断だった。教室の笑い我慢ゲームの難易度だけが上がったが、肩の力が抜けたおかげで自分の答案には逆に集中できた。",
+          fx: { gaku: 9, mental: 8, shinrai: 2, omoide: 4 },
+        },
+        {
+          label: "何事もなかったようにテストを続ける",
+          text: "心を無にして問題に戻った。極限の集中状態に入り、むしろいつもより解けた。さっきまで悩んでいた問題が次々と解けていく。伊藤君のおかげかもしれない。いや、それはない。",
+          fx: { gaku: 13, mental: 9, omoide: 3 },
+        },
+      ],
+      after: "この事件は後に「あの日の音」として学年中に語り継がれることになる。伊藤君本人はテスト終了のチャイムで爽やかに目覚め、「よく寝た」と言った。",
+    };
+  }
+
+  // 放屁が起きない静かな回
+  return {
+    id: "test_quiet", place: "教室（テスト中）", bgm: "heated",
+    title: `${label}テスト`,
+    text: `${label}テスト本番。教室は鉛筆の音しかしない極度の静寂に包まれている。\n\n` +
+      "今日の伊藤けいすけは開始10分で机に突っ伏して寝ているものの、それ以上は何も起こさない。教室は珍しく平穏だ。\n" +
+      "窓際では小沼あいさんが涼しい顔で猛烈な速さでペンを走らせ、石川君は「この問題は論理的に解ける」と言わんばかりの自信顔。\n" +
+      "さあ、自分の番だ。今までの積み重ねを、この一枚にぶつける。",
+    choices: [
+      {
+        label: "最後まで集中して解ききる",
+        text: "雑念を振り払い、一問ずつ着実に潰していった。見直しの時間まで確保できた。やれることはやった、という静かな手応えが残る。",
+        fx: { gaku: 4, mental: 2, omoide: 2 },
+      },
+      {
+        label: "分からない問題は潔く飛ばす",
+        text: "詰まった問題に固執せず、解ける問題から手をつけた。時間配分の勝利だ。テストは知識だけでなく、立ち回りの勝負でもある。",
+        fx: { gaku: 2, mental: 3, omoide: 1 },
+      },
+      {
+        label: "隣で寝ている伊藤を横目に気を引き締める",
+        text: "寝こけている伊藤君を横目に「自分は絶対こうはならない」と気合を入れ直した。反面教師という言葉の意味を、今日ほど噛みしめた日はない。",
+        fx: { gaku: 3, nori: 1, omoide: 2 }, rel: { ito: 1 },
+      },
+    ],
+    after: "チャイムと同時に、教室から一斉に大きなため息が漏れた。終わった——とりあえず、終わったのだ。",
+  };
+}
+
 function showTestPrepScreen(onDone) {
   ADV = null;
   window.__testPrepDone = onDone;
   bgmPlay("heated");
+  const testLabel = TEST_WEEKS[S.week] || "定期";
 
   const cards = TEST_PREP_OPTIONS.map((o, i) => `
     <button class="prep-card c-${o.color}" onclick="chooseTestPrep(${i})">
@@ -287,9 +368,9 @@ function showTestPrepScreen(onDone) {
   render(`
     <div class="screen prep-screen">
       <div class="panel">
-        <div class="panel-title">📝 中間テスト直前 — 作戦会議</div>
-        <p class="hint">いよいよ明日から中間テスト（5教科・500点満点）。テスト前の過ごし方で点数が変わる。<br>
-          いまの学力 <b>${S.stats.gaku}</b> ／ メンタル <b>${S.stats.mental}</b> ／ ストレス <b>${S.stress}</b>（${condition().label}）</p>
+        <div class="panel-title">📝 ${esc(testLabel)}テスト直前 — 作戦会議</div>
+        <p class="hint">いよいよ明日から${esc(testLabel)}テスト（5教科・500点満点）。テスト前の過ごし方で点数が変わる。<br>
+          いまの学力 <b>${statRank(S.stats.gaku)}</b>（${S.stats.gaku}） ／ メンタル <b>${statRank(S.stats.mental)}</b>（${S.stats.mental}） ／ ストレス <b>${S.stress}</b>（${condition().label}）</p>
         <div class="prep-grid">${cards}</div>
         <p class="hint" style="margin-top:14px">※ 学力が同じでも、勉強量・メンタル・体調・運で結果は毎回ブレる。本番までに体調も整えておこう。</p>
       </div>
@@ -301,6 +382,7 @@ function showTestPrepScreen(onDone) {
 function chooseTestPrep(idx) {
   const o = TEST_PREP_OPTIONS[idx];
   S.testPrep = o.id;
+  S.testPrepWeek = S.week;   // この週の作戦は済み（複数テスト対応）
   applyFx(o.fx);
   applyStress(o.stress);
   save();
@@ -376,8 +458,8 @@ function showTestBoard() {
   render(`
     <div class="screen board-screen">
       <div class="panel">
-        <div class="panel-title">📋 テスト順位発表 — 廊下の掲示板</div>
-        <p class="hint">中間テストの学年順位が貼り出された。掲示板の前は人だかりだ。（${tr.count}人中）</p>
+        <div class="panel-title">📋 ${esc(tr.label || "")}テスト順位発表 — 廊下の掲示板</div>
+        <p class="hint">${esc(tr.label || "")}テストの学年順位が貼り出された。掲示板の前は人だかりだ。（${tr.count}人中）</p>
 
         <div class="board-mecard">
           <div class="board-mecard-top">
@@ -415,5 +497,5 @@ function finishTestBoard() {
   S.testResult.shown = true;
   save();
   // 続けて結果発表週の会話イベント（小沼に勉強法を聞く 等）へ
-  showEvent(WEEKLY_EVENTS[TEST_RESULT_WEEK], afterFixedEvent);
+  showEvent(WEEKLY_EVENTS[S.week], afterFixedEvent);
 }

@@ -162,7 +162,38 @@ body {
 .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 14px; }
 .stat { display: flex; justify-content: space-between; font-size: 13px; border-bottom: 1px dashed var(--card-edge); padding: 2px 0; }
 .stat-name { color: var(--text-dim); }
-.stat-val { font-weight: bold; }
+.stat-val { font-weight: bold; display: inline-flex; align-items: center; gap: 6px; }
+
+/* 能力ランクバッジ（ウマ娘式 S〜F） */
+.rank-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 4px; border-radius: 6px;
+  font-size: 12px; font-weight: 900; color: #fff; line-height: 1;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+}
+.rank-badge.rank-S { background: linear-gradient(180deg, #ffd86b, #f0a93a); color: #6a4a00; }
+.rank-badge.rank-A { background: linear-gradient(180deg, #ff8a76, #e85f4c); }
+.rank-badge.rank-B { background: linear-gradient(180deg, #b48ce8, #8f63cc); }
+.rank-badge.rank-C { background: linear-gradient(180deg, #6fa8ff, #4a7fe0); }
+.rank-badge.rank-D { background: linear-gradient(180deg, #6ecf90, #43ab68); }
+.rank-badge.rank-E { background: linear-gradient(180deg, #a8aebc, #7e8595); }
+.rank-badge.rank-F { background: linear-gradient(180deg, #8a8f9c, #5e6473); }
+
+/* ---------- 一緒に練習（NPC選択画面） ---------- */
+.train-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+.train-card {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--card); border: 2px solid var(--card-edge); border-radius: 14px;
+  padding: 10px 14px; cursor: pointer; font-family: inherit;
+  transition: transform .08s, border-color .15s, box-shadow .15s;
+}
+.train-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 4px 12px rgba(216,160,180,0.25); }
+.train-icon { font-size: 30px; flex-shrink: 0; }
+.train-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.train-name { font-weight: bold; font-size: 15px; }
+.train-sp { font-size: 12px; color: var(--text-dim); }
+.train-rel { font-size: 12px; color: var(--accent); font-weight: bold; }
+@media (max-width: 640px) { .train-grid { grid-template-columns: 1fr; } }
 
 /* ---------- ADVイベント画面（game02風） ---------- */
 .adv {
@@ -283,6 +314,9 @@ body {
 .rank-A { color: var(--up); border-color: var(--up); }
 .rank-B { color: var(--accent2); border-color: var(--accent2); }
 .rank-C { color: var(--text-dim); border-color: var(--text-dim); }
+.ending-rank.rank-D { color: #43ab68; border-color: #43ab68; }
+.ending-rank.rank-E { color: #7e8595; border-color: #7e8595; }
+.ending-rank.rank-F { color: #5e6473; border-color: #5e6473; }
 .ending-rankmsg { color: var(--text-dim); }
 .ending-screen h3, .npc-screen h3 { margin: 22px 0 10px; color: var(--accent); font-size: 15px; letter-spacing: 2px; border-bottom: 2px solid var(--card-edge); padding-bottom: 6px; }
 .ending-title { padding: 8px 0; border-bottom: 1px dashed var(--card-edge); }

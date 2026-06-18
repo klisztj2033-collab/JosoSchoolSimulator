@@ -16,8 +16,8 @@
 /* ---------- 状態初期化（持ち検週の抽選・初期所持品） ---------- */
 function ensureMochikenState(S) {
   if (S.checkWeek == null) {
-    // 中間テスト/結果発表（週6・7）を避けてランダムに1週決定
-    const pool = [4, 5, 8, 9];
+    // テスト週・大型行事週を避け、年間の通常週からランダムに1週決定
+    const pool = [4, 5, 8, 10, 15, 21];
     S.checkWeek = pool[Math.floor(Math.random() * pool.length)];
   }
   if (S.items === undefined)        S.items = (MOCHIKEN_START_ITEMS[S.type] || ["manga"]).slice();
@@ -196,7 +196,8 @@ function mochikenStash(mode) {
  * 当日: 導入 → プレイヤー判定 → NPC判定 → 後日談
  * ========================================================= */
 function concealPlayer() {
-  return Math.max(10, Math.min(78, 35 + S.stats.komyu * 0.3 + (S.stats.mental - 40) * 0.2));
+  // 能力は0〜1000なので0〜100換算して使う
+  return Math.max(10, Math.min(78, 35 + (S.stats.komyu / 10) * 0.3 + (S.stats.mental / 10 - 40) * 0.2));
 }
 /* conceal=隠し能力(高いほど安全)。見つかったら true */
 function rollFound(conceal) {

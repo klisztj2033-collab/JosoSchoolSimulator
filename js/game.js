@@ -19,17 +19,29 @@ const BGM_FILES = {
 /* 週ごとのBGM（固定イベント） */
 const WEEKLY_BGM = [
   "opening",  // 0: 入学式・クラス発表
-  "comedy",   // 1: 最初の休み時間
+  "comedy",   // 1: 最初の休み時間・新入生歓迎会
   "everyday", // 2: 部活動勧誘
   "everyday", // 3: 荒川沖駅（帰りの電車）
-  "everyday", // 4: GW前・グループ形成
+  "everyday", // 4: GW前・グループ形成・JRC結団式
   "comedy",   // 5: GW明けの教室
-  "eerie",    // 6: 中間テスト＆伊藤伝説
-  "heated",   // 7: テスト結果発表
+  "eerie",    // 6: 1学期中間テスト
+  "heated",   // 7: 中間テスト結果発表
   "everyday", // 8: 梅雨入り
-  "heated",   // 9: 体育・マラソン
+  "heated",   // 9: 体育祭
   "everyday", // 10: パソコンサークル
   "moving",   // 11: 1学期中間評価
+  "heated",   // 12: 野球応援
+  "eerie",    // 13: 1学期期末テスト
+  "moving",   // 14: 期末結果＆1学期終業式
+  "everyday", // 15: 2学期スタート
+  "heated",   // 16: マラソン大会（洞峰公園）＆お弁当
+  "comedy",   // 17: ハロウィンパーティー
+  "everyday", // 18: 常友祭（文化祭）準備
+  "heated",   // 19: 常友祭 本番
+  "moving",   // 20: スキースクール
+  "everyday", // 21: 3学期スタート・冬の日常
+  "heated",   // 22: クラスマッチ
+  "moving",   // 23: 1年生 終了評価
 ];
 
 /* ランダムイベントごとのBGM */
@@ -54,6 +66,7 @@ const RANDOM_BGM = {
 /* アクションごとのBGM */
 const ACTION_BGM = {
   study:   "heated",
+  sport:   "heated",
   talk:    "everyday",
   club:    "everyday",
   explore: "everyday",
@@ -109,17 +122,19 @@ function bgmForEvent(ev, isRandom) {
   return WEEKLY_BGM[S ? S.week : 0] || "everyday";
 }
 
-const SAVE_KEY = "joso_sim_save_v1";
-const TOTAL_WEEKS = 12;
+const SAVE_KEY = "joso_sim_save_v2"; // v2: 能力0〜1000・育成システム改修で旧セーブは非互換
+const TOTAL_WEEKS = 24;   // 中等部1年生・1年間（4月〜翌3月）
 const $app = document.getElementById("app");
 
 let S = null; // ゲーム状態
 
 /* ---------- 状態管理 ---------- */
 function newState(name, cls, typeId) {
-  const stats = { gaku: 30, undo: 30, komyu: 30, ninki: 20, mental: 40, nori: 30, shinrai: 30, renai: 10, omoide: 0 };
+  // 能力は0〜1000スケール。初期値は概ねランクE〜D。
+  const stats = { gaku: 250, undo: 250, mental: 320, komyu: 250, ninki: 180, renai: 90, nori: 240, shinrai: 240, omoide: 0 };
   const type = PLAYER_TYPES.find(t => t.id === typeId);
-  for (const k in type.fx) stats[k] += type.fx[k];
+  for (const k in type.fx) stats[k] = (stats[k] || 0) + type.fx[k] * 8; // タイプ補正も1000スケールへ
+  for (const k in stats) if (k !== "omoide") stats[k] = Math.max(0, Math.min(STAT_MAX, stats[k]));
   return {
     name, cls, type: typeId,
     week: 0,
@@ -157,10 +172,10 @@ function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
 
 /* ---------- 体調（ときメモ式コンディション） ---------- */
 function condition() {
-  if (S.stress < 35)  return { label: "絶好調", face: "😄", mult: 1.25, cls: "good" };
-  if (S.stress < 70)  return { label: "ふつう", face: "🙂", mult: 1.0,  cls: "mid" };
-  if (S.stress < 100) return { label: "不調",   face: "😵", mult: 0.6,  cls: "bad" };
-  return { label: "限界", face: "🤒", mult: 0.5, cls: "sick" };
+  if (S.stress < 35)  return { label: "絶好調", face: "😄", mult: 1.2, cls: "good" };
+  if (S.stress < 70)  return { label: "ふつう", face: "🙂", mult: 1.0, cls: "mid" };
+  if (S.stress < 100) return { label: "不調",   face: "😵", mult: 0.8, cls: "bad" };
+  return { label: "限界", face: "🤒", mult: 0.7, cls: "sick" };
 }
 function applyStress(n) {
   if (!n) return;
@@ -172,9 +187,29 @@ function applyFx(fx) {
   if (!fx) return;
   for (const k in fx) {
     S.stats[k] = (S.stats[k] || 0) + fx[k];
-    if (k !== "omoide") S.stats[k] = Math.max(0, Math.min(100, S.stats[k]));
+    if (k !== "omoide") S.stats[k] = Math.max(0, Math.min(STAT_MAX, S.stats[k]));
     S.weekDelta[k] = (S.weekDelta[k] || 0) + fx[k];
   }
+}
+
+/* イベント等の物語フローによる小さな効果は STORY_SCALE 倍して1000スケールに乗せる
+ *   （例: 選択肢の renai+5 → +20）。omoide(ポイント)はそのまま。 */
+const STORY_SCALE = 4;
+function scaleStoryFx(fx) {
+  if (!fx) return fx;
+  const out = {};
+  for (const k in fx) out[k] = (k === "omoide") ? fx[k] : fx[k] * STORY_SCALE;
+  return out;
+}
+
+/* 練習による成長は能力が高いほど伸びにくくなる（収穫逓減）。
+ *   低〜中ランクはほぼ等倍、高ランク（S付近）に近づくほど大きく鈍る。
+ *   → 仕様書「1000到達は非常に難しい」を表現する。omoideは対象外。 */
+function taperedGain(k, g) {
+  if (g <= 0 || k === "omoide") return g;
+  const v = S.stats[k] || 0;
+  const factor = 1 - Math.pow(v / STAT_MAX, 2) * 0.7; // v=250→0.96, 600→0.75, 800→0.55, 900→0.43, 970→0.34
+  return g * Math.max(0.12, factor);
 }
 function applyRel(rel) {
   if (!rel) return;
@@ -188,7 +223,7 @@ function applyRel(rel) {
  * 採点済みなら実際の順位を返す。未採点時は学力からの概算をフォールバック。 */
 window.calcTestRank = function (state) {
   if (state.testResult && state.testResult.playerRank) return state.testResult.playerRank;
-  const g = state.stats.gaku;
+  const g = state.stats.gaku / 10; // 0〜1000 → 0〜100換算
   return Math.max(2, Math.min(GRADE_SIZE - 1, Math.round(GRADE_SIZE - g * 1.0)));
 };
 
@@ -387,7 +422,7 @@ function showTitle() {
         ${hasSave ? `<button class="btn" onclick="continueGame()">つづきから</button>` : ""}
         <button class="btn ghost" onclick="showNpcList(showTitle)">登場人物名鑑</button>
       </div>
-      <div class="title-note">第1章「入学 〜 1学期前半」（4月〜6月）収録</div>
+      <div class="title-note">第1部「中等部1年生」（4月〜翌3月・1年間）収録</div>
     </div>
   `);
 }
@@ -449,7 +484,18 @@ function createDone() {
   const type = document.querySelector('input[name="ptype"]:checked').value;
   S = newState(name, cls, type);
   save();
-  showMain();
+  startOpening();
+}
+
+/* 新規開始時の導入: 入学式・クラス発表を先に再生してから最初の週のコマンドへ */
+function startOpening() {
+  ADV = null;
+  if (typeof ensureLifeState === "function") ensureLifeState(S);
+  showEvent(WEEKLY_EVENTS[0], () => {
+    S.flags.openingDone = true;
+    save();
+    showMain();
+  });
 }
 
 /* =========================================================
@@ -479,6 +525,8 @@ function showMain() {
   const ev = WEEKLY_EVENTS[S.week];
   const cond = condition();
   const [month, weekNo] = WEEK_LABELS[S.week].split(" ");
+  // 週0は入学式を導入で再生済みなので「予定」表示を入学後の日常に差し替える
+  const planLabel = (S.week === 0 && S.flags.openingDone) ? "入学後、最初の一週間" : ev.title;
 
   const cmdBtn = (a) => `
     <button class="cmd-btn c-${a.color}" onclick="doAction('${a.id}')"
@@ -487,22 +535,27 @@ function showMain() {
     </button>`;
   const A = Object.fromEntries(ACTIONS.map(a => [a.id, a]));
 
-  const statRows = Object.keys(STAT_LABELS).map(k =>
-    `<div class="stat"><span class="stat-name">${STAT_LABELS[k]}</span><span class="stat-val">${S.stats[k]}</span></div>`).join("");
+  const statRows = Object.keys(STAT_LABELS).map(k => {
+    if (k === "omoide")
+      return `<div class="stat"><span class="stat-name">${STAT_LABELS[k]}</span><span class="stat-val">${S.stats[k]}</span></div>`;
+    const r = statRank(S.stats[k]);
+    return `<div class="stat"><span class="stat-name">${STAT_LABELS[k]}</span>` +
+      `<span class="stat-val"><span class="rank-badge rank-${r}">${r}</span>${S.stats[k]}</span></div>`;
+  }).join("");
 
   render(`
     <div class="screen cmd-screen">
       <div class="cmd-top">
         <div class="cmd-date"><span class="cmd-month">${month}</span><span class="cmd-week">${weekNo}</span></div>
-        <div class="cmd-plan">今週の予定：${esc(ev.title)}</div>
+        <div class="cmd-plan">今週の予定：${esc(planLabel)}</div>
       </div>
       <div class="cmd-body">
         <div class="cmd-grid">
-          ${cmdBtn(A.study)}${cmdBtn(A.talk)}${cmdBtn(A.club)}
-          ${cmdBtn(A.explore)}
+          ${cmdBtn(A.study)}${cmdBtn(A.sport)}${cmdBtn(A.talk)}
+          ${cmdBtn(A.club)}
           <div class="cmd-center"><img class="cmd-chibi-img" src="picture/character/ちびキャラ02.png" alt="キャラ"><span class="cmd-chibi-name">${esc(S.name)}</span></div>
-          ${cmdBtn(A.station)}
-          ${cmdBtn(A.rest)}${cmdBtn(A.chaos)}
+          ${cmdBtn(A.explore)}
+          ${cmdBtn(A.station)}${cmdBtn(A.rest)}${cmdBtn(A.chaos)}
           <button class="cmd-btn c-gray" onclick="showSystem()"
             onmouseover="cmdInfo('セーブ確認・名鑑・記録・タイトルへ')" onmouseout="cmdInfo('コマンドを選ぼう')">
             <span class="cmd-icon">⚙️</span><span>システム</span>
@@ -574,26 +627,34 @@ function doAction(actionId) {
   bgmPlay(ACTION_BGM[actionId] || "everyday");
   S.lastAction = actionId;
 
-  // 体調補正（プラス効果のみ倍率がかかる）
+  // 体調補正（プラス効果のみ倍率がかかる）＋ 高ランクほど伸びにくい収穫逓減
   const cond = condition();
   const fx = {};
   for (const k in act.fx) {
-    fx[k] = act.fx[k] > 0 ? Math.max(1, Math.round(act.fx[k] * cond.mult)) : act.fx[k];
+    fx[k] = act.fx[k] > 0 ? Math.max(1, Math.round(taperedGain(k, act.fx[k] * cond.mult))) : act.fx[k];
   }
+
+  // --- 友情コンボ: ステータスを伸ばすコマンドで、得意な友達がランダム出現（複数同時もあり） ---
+  const combo = act.trainStats ? rollFriendshipCombo(act.trainStats, cond) : null;
+  let comboText = "";
+  const relGain = {};
+  if (combo) {
+    for (const k in combo.fx) fx[k] = (fx[k] || 0) + combo.fx[k];
+    combo.ids.forEach(id => relGain[id] = (relGain[id] || 0) + 2); // 一緒に頑張ると少し仲良くなる
+    comboText = "\n" + combo.text;
+  }
+
   applyFx(fx);
   applyStress(act.stress);
 
   let text;
-  let extraRel = null;
   if (actionId === "talk") {
     const target = pick(NPCS.filter(n => n.group !== "先生"));
-    extraRel = { [target.id]: 3 };
-    applyRel(extraRel);
+    relGain[target.id] = (relGain[target.id] || 0) + 3;
     text = `休み時間や放課後、${target.name}とよく話した。\n${target.name}${target.quote}\n——今週もこの調子だった。少し仲良くなった気がする。`;
   } else if (actionId === "club") {
     if (S.flags.pcclub) {
-      extraRel = { damaki: 2, kotan: 2, sakakibara: 2 };
-      applyRel(extraRel);
+      ["damaki", "kotan", "sakakibara"].forEach(id => relGain[id] = (relGain[id] || 0) + 2);
       text = "パソコンサークルの部室で過ごした。\nだまき部長の謎プログラム、小丹君のガンダム話、榊原君のアニメ分析。今日も平常運転だ。";
     } else {
       text = "いろんな部活を見て回った。\nグラウンドの熱気、体育館の掛け声、そしてパソコンサークル部室の静かなキーボード音。\nそろそろどこかに腰を据えたい。";
@@ -601,8 +662,12 @@ function doAction(actionId) {
   } else {
     text = pick(act.texts);
   }
+  text += comboText;
 
-  window.__pendingResult = { fx, rel: extraRel, stress: act.stress };
+  const hasRel = Object.keys(relGain).length ? relGain : null;
+  if (hasRel) applyRel(relGain);
+
+  window.__pendingResult = { fx, rel: hasRel, stress: act.stress };
   showAdv({
     bg: BGS[act.bg],
     badge: `${act.icon} 今週の行動：${act.label}`,
@@ -613,6 +678,85 @@ function doAction(actionId) {
       showResultOverlay(r.fx, r.rel, r.stress, "そして週末——", "startFixedEvent");
     },
   });
+}
+
+/* =========================================================
+ * 友情コンボ（得意な友達がランダム出現して成長を後押し）
+ *   1) そのコマンドが鍛える能力(stats: 配列)のいずれかが得意な友達それぞれについて、
+ *      現れるかどうかを個別に抽選する
+ *   2) 知り合い未満(<31)は対象外。発生確率は好感度で友達ごとに変動
+ *   3) 条件を満たす友達が複数いれば、友情コンボは同時に複数発生することがあり、
+ *      その場合はそれぞれの成長ボーナスがすべて上乗せされる（スタックする）
+ *   4) 発生した友達ごとに、好感度ランク倍率×コンボ×体調ぶんの成長を上乗せ
+ *   返り値: { ids:[...], fx:{合計追加成長}, text } または null
+ * ========================================================= */
+const MAX_COMBO_FRIENDS = 5; // 同時に現れる友達の上限（演出・バランス用）
+
+function rollFriendshipCombo(stats, cond) {
+  const wanted = Array.isArray(stats) ? stats : [stats];
+  const cands = Object.keys(NPC_SPECIALTY).filter(id =>
+    wanted.some(st => (NPC_SPECIALTY[id].stats[st] || 0) > 0));
+
+  // 候補それぞれについて「現れるか」を個別抽選 → 複数人同時に現れることもある。
+  // 好感度0でも低確率で発動（誰かしら≒5回に1回）。恋人は対象コマンドで約2回に1回。
+  let joined = cands.filter(id => {
+    const rel = S.rel[id] || 0;
+    let chance = friendshipComboChance(rel);                     // 発生確率は好感度依存（友達ごとに独立）
+    if (S.partner && id === S.partner) chance = Math.max(chance, 0.5); // 恋人は最低50%に底上げ
+    return Math.random() < chance;
+  });
+  if (!joined.length) return null;
+
+  // 多すぎると演出も成長も過剰になるので、好感度の高い順に上限まで絞る
+  if (joined.length > MAX_COMBO_FRIENDS) {
+    joined.sort((a, b) => (S.rel[b] || 0) - (S.rel[a] || 0));
+    joined = joined.slice(0, MAX_COMBO_FRIENDS);
+  }
+
+  const fx = {};
+  const lines = [];
+  for (const id of joined) {
+    const sp = NPC_SPECIALTY[id];
+    const rel = S.rel[id] || 0;
+    const tier = affinityTier(rel);
+    const combo = activeComboFor(id, S.rel);
+    const comboMult = 1 + (combo ? combo.bonus : 0);
+
+    // 上乗せ成長 = 基礎 ×(好感度倍率-1)× コンボ × 体調（各能力の重みぶん）× 収穫逓減
+    for (const k in sp.stats) {
+      const g = SPECIALTY_BASE * sp.stats[k] * (tier.mult - 1) * comboMult * (cond ? cond.mult : 1);
+      const add = Math.round(taperedGain(k, g));
+      if (add > 0) fx[k] = (fx[k] || 0) + add;
+    }
+
+    // 特殊効果
+    let special = "";
+    if (sp.special === "efficient" && Math.random() < 0.5) {
+      fx.gaku = (fx.gaku || 0) + 18; special = "得意の効率的な勉強法で、理解がぐっと深まった！";
+    } else if (sp.special === "testboost" && isTestSoon()) {
+      fx.gaku = (fx.gaku || 0) + 16; special = "テスト直前、要点まとめが冴えわたる！";
+    } else if (sp.special === "lucky") {
+      applyStress(-8); special = "話していると心が軽くなり、ストレスも少し抜けた。";
+    }
+
+    let line = `${npcName(id)}（${sp.label}が得意・${tier.label}）が加わった！`;
+    if (combo) line += `さらに${combo.label}発動！${npcName(combo.other)}も合流して効率が跳ね上がる。`;
+    if (special) line += special;
+    lines.push(line);
+  }
+
+  let text = joined.length > 1
+    ? "——そこへ、友達が次々と加わった！友情コンボ発生！\n" + lines.map(l => "・" + l).join("\n")
+    : "——そこへ、" + lines[0];
+  const summary = Object.keys(fx).map(k => `${STAT_LABELS[k]}+${fx[k]}`).join("・");
+  if (summary) text += `\n友情コンボで、いつもより大きく伸びた（${summary}）。`;
+
+  return { ids: joined, fx, text };
+}
+
+/* テストが近い週か（飯泉の特殊効果用）: 今週か来週がテスト週 */
+function isTestSoon() {
+  return (typeof isTestWeek === "function") && (isTestWeek(S.week) || isTestWeek(S.week + 1));
 }
 
 /* 固定イベント後の共通処理: 人生分岐イベント → ランダムイベント → 週末まとめ */
@@ -633,10 +777,12 @@ function continueToRandom() {
 }
 
 function startFixedEvent() {
-  // 中間テスト週: 作戦選択 → テスト本番 → 採点（順位は結果発表週まで伏せる）
-  if (S.week === TEST_WEEK && !S.testPrep) return startTestSequence();
+  // 入学式は開始時に導入として再生済みなので、週0ではアクション後の再生をスキップ
+  if (S.week === 0 && S.flags.openingDone) return afterFixedEvent();
+  // テスト週（中間・期末）: 作戦選択 → テスト本番 → 採点（順位は結果発表週まで伏せる）
+  if (isTestWeek(S.week) && S.testPrepWeek !== S.week) return startTestSequence();
   // 結果発表週: 廊下の掲示板で学年順位を発表
-  if (S.week === TEST_RESULT_WEEK && !(S.testResult && S.testResult.shown)) return showTestBoard();
+  if (isTestResultWeek(S.week) && !(S.testResult && S.testResult.shown && S.testResult.week === S.week)) return showTestBoard();
   showEvent(WEEKLY_EVENTS[S.week], afterFixedEvent);
 }
 
@@ -678,12 +824,13 @@ function showEventChoices() {
 function chooseEvent(idx) {
   const ev = window.__currentEvent;
   const c = ev.choices[idx];
-  applyFx(c.fx);
+  const sfx = scaleStoryFx(c.fx);             // 物語効果は1000スケールへ
+  applyFx(sfx);
   applyRel(c.rel);
   if (c.flag) S.flags[c.flag] = true;
   if (c.stress) applyStress(c.stress);
   if (typeof c.fn === "function") c.fn(S);     // 任意の追加処理（人生分岐などで使用）
-  window.__pendingResult = { fx: c.fx, rel: c.rel, stress: c.stress || 0 };
+  window.__pendingResult = { fx: sfx, rel: c.rel, stress: c.stress || 0 };
 
   let lines = parseLines(resolveText(c.text));
   if (ev.after) lines = lines.concat(parseLines(ev.after));
@@ -725,7 +872,7 @@ function showWeekend() {
         <p>今週のできごと: <b>${esc(ev.title)}</b></p>
         <div class="weekend-deltas">${deltas}</div>
         <p class="weekend-cond">体調: ${cond.face} ${cond.label}（ストレス ${S.stress}）</p>
-        <button class="btn primary" onclick="nextWeek()">${isLast ? "3か月の結果を見る" : "次の週へ"}</button>
+        <button class="btn primary" onclick="nextWeek()">${isLast ? "1年間の結果を見る" : "次の週へ"}</button>
       </div>
     </div>
   `);
@@ -740,7 +887,7 @@ function nextWeek() {
 }
 
 /* =========================================================
- * 画面: エンディング（3か月評価）
+ * 画面: エンディング（1年間の総合評価）
  * ========================================================= */
 function showEnding() {
   ADV = null;
@@ -753,30 +900,42 @@ function showEnding() {
   const sorted = Object.entries(S.rel).sort((a, b) => b[1] - a[1]).slice(0, 3).filter(([, v]) => v > 0);
   const friends = sorted.length
     ? sorted.map(([id, v]) => {
-        const comment = ENDING_FRIEND_COMMENTS[id] || `${npcName(id)}「2学期もよろしくな」`;
+        const comment = ENDING_FRIEND_COMMENTS[id] || `${npcName(id)}「2年生になっても、よろしくな」`;
         return `<div class="friend-row"><span class="friend-name">${esc(npcName(id))}</span><span class="friend-hearts">${"♥".repeat(Math.max(1, Math.min(5, Math.round(v / 20))))}</span><div class="friend-comment">${esc(comment)}</div></div>`;
       }).join("")
-    : `<p class="hint">特別仲の良い友達はまだいない。2学期に期待。</p>`;
+    : `<p class="hint">特別仲の良い友達はまだいない。2年生では、もっと踏み込んでみよう。</p>`;
 
-  const total = S.stats.gaku + S.stats.komyu + S.stats.ninki + S.stats.nori + S.stats.shinrai + S.stats.omoide * 2;
+  // 1年生の総合評価タイプ（友情型／学力型／運動型／孤高型）
+  const yearType = endingYearType();
+
+  // 総合ランクは基本6能力の平均で判定（0〜1000）
+  const avg = CORE_STATS.reduce((a, k) => a + S.stats[k], 0) / CORE_STATS.length;
   let rank, rankMsg;
-  if (total >= 330)      { rank = "S"; rankMsg = "伝説の1学期。この3か月はすでに卒業アルバムの1ページ級だ。"; }
-  else if (total >= 280) { rank = "A"; rankMsg = "充実の1学期。常総生活、完全に軌道に乗った。"; }
-  else if (total >= 230) { rank = "B"; rankMsg = "なかなかの1学期。夏休みを挟んでさらに飛躍できそうだ。"; }
-  else                   { rank = "C"; rankMsg = "静かな1学期。だが常総の本番はこれからだ。焦るな。"; }
+  if (avg >= 700)      { rank = "S"; rankMsg = "伝説の1年。全能力が高水準。卒業アルバムの主役級だ。"; }
+  else if (avg >= 560) { rank = "A"; rankMsg = "充実の1年。常総での土台は完璧に固まった。2年生が楽しみだ。"; }
+  else if (avg >= 450) { rank = "B"; rankMsg = "なかなかの1年。良い出会いと経験を重ねた。ここから伸びる。"; }
+  else if (avg >= 340) { rank = "C"; rankMsg = "平凡だが着実な1年。やりたいことの輪郭が見えてきた。"; }
+  else                 { rank = "D"; rankMsg = "静かな1年。だが常総の本番はこれから。土台はできた、焦るな。"; }
 
-  const statRows = Object.keys(STAT_LABELS).map(k =>
-    `<div class="stat"><span class="stat-name">${STAT_LABELS[k]}</span><span class="stat-val">${S.stats[k]}</span></div>`).join("");
+  const statRows = Object.keys(STAT_LABELS).map(k => {
+    if (k === "omoide")
+      return `<div class="stat"><span class="stat-name">${STAT_LABELS[k]}</span><span class="stat-val">${S.stats[k]}</span></div>`;
+    const r = statRank(S.stats[k]);
+    return `<div class="stat"><span class="stat-name">${STAT_LABELS[k]}</span>` +
+      `<span class="stat-val"><span class="rank-badge rank-${r}">${r}</span>${S.stats[k]}</span></div>`;
+  }).join("");
 
   render(`
     <div class="screen ending-screen">
       <div class="panel">
         <div class="ending-head">
-          <div class="ending-label">1学期前半 終了</div>
-          <h2>${esc(S.name)} の3か月</h2>
+          <div class="ending-label">中等部1年生 修了</div>
+          <h2>${esc(S.name)} の1年間</h2>
           <div class="ending-rank rank-${rank}">${rank}</div>
           <p class="ending-rankmsg">${rankMsg}</p>
         </div>
+        <h3>1年生の歩み</h3>
+        <div class="ending-title"><b>${yearType.label}</b><span>${yearType.desc}</span></div>
         <h3>獲得した称号</h3>
         ${titleHtml}
         <h3>仲良くなった人たち</h3>
@@ -784,13 +943,30 @@ function showEnding() {
         ${typeof lifeEndingSection === "function" ? lifeEndingSection() : ""}
         <h3>最終ステータス</h3>
         <div class="stats">${statRows}</div>
-        <h3>3か月の記録</h3>
+        <h3>1年間の記録</h3>
         <div class="ending-log">${S.log.map(l => `<div>・${esc(l)}</div>`).join("")}</div>
-        <div class="ending-next">つづき（7月〜）は次回アップデートで実装予定——</div>
+        <div class="ending-next">つづき（中等部2年生〜）は次回アップデートで実装予定——</div>
         <button class="btn primary" onclick="clearSave(); showTitle()">タイトルへ戻る</button>
       </div>
     </div>
   `);
+}
+
+/* 1年生の総合判定タイプ（仕様書「1年生終了評価」: 友情型／学力型／運動型／孤高型） */
+function endingYearType() {
+  const s = S.stats;
+  const friendScore = s.komyu + s.ninki + Object.values(S.rel || {}).filter(v => v > 0).length * 8;
+  const studyScore  = s.gaku * 1.6;
+  const sportScore  = s.undo * 1.6;
+  const soloScore   = (s.gaku + s.undo + s.mental) - (s.komyu + s.ninki);
+  const scores = [
+    { key: "friend", v: friendScore, label: "クラスの中心人物", desc: "友情型。気づけば、いつも周りに人がいた。このクラスに欠かせない存在だった。" },
+    { key: "study",  v: studyScore,  label: "期待の新入生",     desc: "学力型。勉強で頭角を現した1年。先生たちの期待を一身に背負っている。" },
+    { key: "sport",  v: sportScore,  label: "運動スター候補",   desc: "運動型。体育祭やマラソンでの活躍は学年中の語り草。次の主役は君だ。" },
+    { key: "solo",   v: soloScore,   label: "謎の実力者",       desc: "孤高型。群れず、しかし着実に力をつけた。その背中を、皆が密かに追っている。" },
+  ];
+  scores.sort((a, b) => b.v - a.v);
+  return scores[0];
 }
 
 /* =========================================================
