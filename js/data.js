@@ -21,6 +21,8 @@ const STAT_LABELS = {
 
 /* 能力上限と、画面表示用のランク評価（ウマ娘式 S〜F） */
 const STAT_MAX = 1000;
+/* 実質的な到達上限。どれだけ上振れても核能力は1000には届かない（少し手前で頭打ち）。 */
+const STAT_SOFT_MAX = 990;
 const CORE_STATS = ["gaku", "undo", "mental", "komyu", "ninki", "renai"]; // 基本6能力
 const RANKED_STATS = ["gaku", "undo", "mental", "komyu", "ninki", "renai", "nori", "shinrai"]; // ランク表示する能力（omoide以外）
 const STAT_RANK_TABLE = [

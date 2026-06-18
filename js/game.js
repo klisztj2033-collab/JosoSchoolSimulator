@@ -151,7 +151,9 @@ function newState(name, cls, typeId) {
     schoolEval: 70,    // 学校評価 0-100
     trouble: 0,        // 問題行動値 0-100
     attendance: 100,   // 出席状況 0-100
-    partner: null,     // 交際相手のNPC id
+    partner: null,     // 交際相手のNPC id（初回の相手＝進路イベント/エンディング用の主相手）
+    partners: [],      // 交際相手のNPC id一覧（恋人は複数可）
+    romanceDeclined: [],// 告白を見送った相手（再勧誘しない）
     romanceStart: null,// 交際開始週
     lifeEvent: null,   // 進行中の重大イベント { stage, choice, week, theme }
     route: null,       // 確定した進路: continue / path_change / leave
@@ -187,7 +189,8 @@ function applyFx(fx) {
   if (!fx) return;
   for (const k in fx) {
     S.stats[k] = (S.stats[k] || 0) + fx[k];
-    if (k !== "omoide") S.stats[k] = Math.max(0, Math.min(STAT_MAX, S.stats[k]));
+    // omoide以外は上限クランプ。上振れても核能力は1000には届かない（STAT_SOFT_MAXで頭打ち）。
+    if (k !== "omoide") S.stats[k] = Math.max(0, Math.min(STAT_SOFT_MAX, S.stats[k]));
     S.weekDelta[k] = (S.weekDelta[k] || 0) + fx[k];
   }
 }
@@ -204,12 +207,12 @@ function scaleStoryFx(fx) {
 
 /* 練習による成長は能力が高いほど伸びにくくなる（収穫逓減）。
  *   低〜中ランクはほぼ等倍、高ランク（S付近）に近づくほど大きく鈍る。
- *   → 仕様書「1000到達は非常に難しい」を表現する。omoideは対象外。 */
+ *   到達上限の保証は applyFx の STAT_SOFT_MAX クランプ側で行う。omoideは対象外。 */
 function taperedGain(k, g) {
   if (g <= 0 || k === "omoide") return g;
   const v = S.stats[k] || 0;
-  const factor = 1 - Math.pow(v / STAT_MAX, 2) * 0.7; // v=250→0.96, 600→0.75, 800→0.55, 900→0.43, 970→0.34
-  return g * Math.max(0.12, factor);
+  const factor = 1 - Math.pow(v / STAT_MAX, 2) * 0.78; // v=250→0.95, 600→0.72, 800→0.50, 900→0.37
+  return g * Math.max(0.1, factor);
 }
 function applyRel(rel) {
   if (!rel) return;
@@ -628,10 +631,11 @@ function doAction(actionId) {
   S.lastAction = actionId;
 
   // 体調補正（プラス効果のみ倍率がかかる）＋ 高ランクほど伸びにくい収穫逓減
+  // ※上限付近では床(+1)を設けない＝1000直前は伸びが0になり、上振れても届かない
   const cond = condition();
   const fx = {};
   for (const k in act.fx) {
-    fx[k] = act.fx[k] > 0 ? Math.max(1, Math.round(taperedGain(k, act.fx[k] * cond.mult))) : act.fx[k];
+    fx[k] = act.fx[k] > 0 ? Math.round(taperedGain(k, act.fx[k] * cond.mult)) : act.fx[k];
   }
 
   // --- 友情コンボ: ステータスを伸ばすコマンドで、得意な友達がランダム出現（複数同時もあり） ---
@@ -699,10 +703,11 @@ function rollFriendshipCombo(stats, cond) {
 
   // 候補それぞれについて「現れるか」を個別抽選 → 複数人同時に現れることもある。
   // 好感度0でも低確率で発動（誰かしら≒5回に1回）。恋人は対象コマンドで約2回に1回。
+  const lovers = S.partners || (S.partner ? [S.partner] : []);
   let joined = cands.filter(id => {
     const rel = S.rel[id] || 0;
     let chance = friendshipComboChance(rel);                     // 発生確率は好感度依存（友達ごとに独立）
-    if (S.partner && id === S.partner) chance = Math.max(chance, 0.5); // 恋人は最低50%に底上げ
+    if (lovers.includes(id)) chance = Math.max(chance, 0.5);     // 恋人は対象コマンドで最低50%に底上げ
     return Math.random() < chance;
   });
   if (!joined.length) return null;
@@ -729,12 +734,16 @@ function rollFriendshipCombo(stats, cond) {
       if (add > 0) fx[k] = (fx[k] || 0) + add;
     }
 
-    // 特殊効果
+    // 特殊効果（学力ボーナスも収穫逓減を通す＝上限付近では伸びない）
     let special = "";
     if (sp.special === "efficient" && Math.random() < 0.5) {
-      fx.gaku = (fx.gaku || 0) + 18; special = "得意の効率的な勉強法で、理解がぐっと深まった！";
+      const add = Math.round(taperedGain("gaku", 18));
+      if (add > 0) fx.gaku = (fx.gaku || 0) + add;
+      special = "得意の効率的な勉強法で、理解がぐっと深まった！";
     } else if (sp.special === "testboost" && isTestSoon()) {
-      fx.gaku = (fx.gaku || 0) + 16; special = "テスト直前、要点まとめが冴えわたる！";
+      const add = Math.round(taperedGain("gaku", 16));
+      if (add > 0) fx.gaku = (fx.gaku || 0) + add;
+      special = "テスト直前、要点まとめが冴えわたる！";
     } else if (sp.special === "lucky") {
       applyStress(-8); special = "話していると心が軽くなり、ストレスも少し抜けた。";
     }

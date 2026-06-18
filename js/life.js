@@ -26,7 +26,9 @@ function ensureLifeState(S) {
   if (S.schoolEval == null)        S.schoolEval = 70;   // 学校評価
   if (S.trouble == null)           S.trouble = 0;       // 問題行動値
   if (S.attendance == null)        S.attendance = 100;  // 出席状況
-  if (S.partner === undefined)     S.partner = null;    // 交際相手
+  if (S.partner === undefined)     S.partner = null;    // 主交際相手（進路イベント用）
+  if (S.partners === undefined)    S.partners = S.partner ? [S.partner] : []; // 恋人一覧（複数可）
+  if (S.romanceDeclined === undefined) S.romanceDeclined = []; // 告白を見送った相手（再勧誘しない）
   if (S.romanceStart === undefined)S.romanceStart = null;
   if (S.lifeEvent === undefined)   S.lifeEvent = null;  // 進行中の重大イベント
   if (S.route === undefined)       S.route = null;      // 確定ルート
@@ -38,12 +40,22 @@ function normalizeLife() {
   S.attendance = Math.max(0, Math.min(100, S.attendance));
 }
 
-/* ---------- 交際相手の候補（最も仲の良い生徒。先生・3年は除外） ---------- */
-function pickPartnerCandidate() {
-  let best = null, bestRel = 24; // 仲良し度25以上が前提
+/* 恋人になれる好感度のしきい値（親友・特別な関係の域）。
+ *   これを満たした相手は条件達成で即「恋人」になれる（恋人は複数可）。 */
+const LOVER_REL_THRESHOLD = 80;
+
+/* ---------- まだ恋人でない、恋人成立条件を満たす相手を1人返す ----------
+ *   条件: 好感度 >= LOVER_REL_THRESHOLD（先生・3年の先輩は対象外）。
+ *   複数いれば最も好感度の高い相手から順に成立していく。 */
+function pickNewLoverCandidate() {
+  const lovers = S.partners || [];
+  const declined = S.romanceDeclined || [];
+  let best = null, bestRel = LOVER_REL_THRESHOLD - 1;
   for (const n of NPCS) {
     if (n.group !== "男子" && n.group !== "女子") continue;
-    if (n.id === "damaki") continue; // 3年の先輩は対象外
+    if (n.id === "damaki") continue;        // 3年の先輩は対象外
+    if (lovers.includes(n.id)) continue;    // すでに恋人
+    if (declined.includes(n.id)) continue;  // 一度見送った相手は再勧誘しない
     const r = S.rel[n.id] || 0;
     if (r > bestRel) { bestRel = r; best = n; }
   }
@@ -81,17 +93,18 @@ function maybeLifeEvents(next) {
   if (S.route) return false;       // ルート確定（継続）後は再発火しない
   if (S.lifeEvent) return false;   // 同じ週に進行中なら何もしない
 
-  // 交際相手が未確定 → 恋愛成立イベント
-  if (!S.partner) {
-    const cand = pickPartnerCandidate();
-    if (cand && S.week >= 5 && S.stats.renai >= 150 && Math.random() < 0.55) {
+  // 恋人成立イベント（複数可・条件達成で即発生）。
+  //   条件: 恋愛力 >= 150 かつ 好感度 >= LOVER_REL_THRESHOLD の相手がいる。
+  //   ランダムゲートは無く、達成した週にすぐ発生する。複数人と順次成立できる。
+  if (S.week >= 3 && S.stats.renai >= 150) {
+    const cand = pickNewLoverCandidate();
+    if (cand) {
       showRomanceStart(cand, next);
       return true;
     }
-    return false;
   }
 
-  // 交際中 → 将来を考える大きな出来事
+  // 交際中（主相手） → 将来を考える大きな出来事
   if (shouldTriggerLifeEvent()) {
     startLifeEvent(next);
     return true;
@@ -104,24 +117,34 @@ function maybeLifeEvents(next) {
  * ========================================================= */
 function showRomanceStart(cand, next) {
   const nm = cand.name;
+  const already = (S.partners || []).length; // すでにいる恋人の人数
+  const intro = already === 0
+    ? `放課後の教室。${nm}と二人きりになった。\n窓の外はオレンジ色で、なんだか落ち着かない空気が流れている。\n\n` +
+      `ここ最近、自然と一緒にいる時間が増えていた。これは——たぶん、そういうことなんだと思う。`
+    : `放課後、${nm}に呼び止められた。まっすぐな目で、こちらを見ている。\n\n` +
+      `気づけば、${nm}とも特別な時間を重ねていた。心は、もう答えを出している気がする。`;
   const ev = {
     id: "romance_start", place: "放課後の教室", bgm: "moving",
-    title: "放課後、二人きり",
-    text: `放課後の教室。${nm}と二人きりになった。\n窓の外はオレンジ色で、なんだか落ち着かない空気が流れている。\n\n` +
-      `ここ最近、自然と一緒にいる時間が増えていた。これは——たぶん、そういうことなんだと思う。`,
+    title: already === 0 ? "放課後、二人きり" : "もうひとつの放課後",
+    text: intro,
     choices: [
       {
         label: `${nm}に気持ちを伝える`, nextLabel: "これからの日々へ",
         text: `勇気を出して気持ちを伝えた。${nm}は驚いた顔をして、それから小さく笑って「……うん。こちらこそ」と言った。\n` +
           `世界が少しだけ違って見える。放課後の教室が、特別な場所になった。`,
         fx: { renai: 5, omoide: 6, mental: 3 }, rel: { [cand.id]: 8 },
-        fn: (S) => { S.partner = cand.id; S.romanceStart = S.week; },
+        fn: (S) => {
+          if (!S.partners) S.partners = [];
+          if (!S.partners.includes(cand.id)) S.partners.push(cand.id);
+          if (!S.partner) { S.partner = cand.id; S.romanceStart = S.week; } // 主相手は初回のみ
+        },
       },
       {
         label: "今はまだ友達のままでいる", nextLabel: "教室を出る",
         text: `言いかけて、やめた。「……なんでもない。また明日」。今の心地よい関係を、まだ壊したくなかった。\n` +
           `これはこれで、悪くない距離感だ。たぶん。`,
         fx: { omoide: 3, mental: 1 }, rel: { [cand.id]: 2 },
+        fn: (S) => { if (!S.romanceDeclined) S.romanceDeclined = []; if (!S.romanceDeclined.includes(cand.id)) S.romanceDeclined.push(cand.id); },
       },
     ],
   };
@@ -298,12 +321,14 @@ function showLifeRouteEnding(route) {
 function lifeEndingSection() {
   if (typeof S === "undefined" || !S) return "";
   let html = "";
-  if (S.partner) {
-    const nm = npcName(S.partner);
+  const lovers = (S.partners && S.partners.length) ? S.partners : (S.partner ? [S.partner] : []);
+  if (lovers.length) {
+    const names = lovers.map(id => npcName(id)).join("・");
     const surv = S.route === "continue";
+    const multi = lovers.length >= 2;
     html += `<h3>恋愛</h3>` +
-      `<div class="ending-title"><b>${esc(nm)}と交際中</b>` +
-      `<span>${surv ? "将来を考える大きな出来事を、二人で乗り越えた。" : "放課後が、少し特別になった1年。"}</span></div>`;
+      `<div class="ending-title"><b>${esc(names)}と交際中${multi ? `（恋人${lovers.length}人）` : ""}</b>` +
+      `<span>${multi ? "誰にも真似できない、にぎやかでまばゆい放課後だった。" : (surv ? "将来を考える大きな出来事を、二人で乗り越えた。" : "放課後が、少し特別になった1年。")}</span></div>`;
   }
   if (S.route === "continue") {
     html += `<div class="ending-title"><b>困難を越えて</b>` +
