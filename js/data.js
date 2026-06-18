@@ -296,7 +296,7 @@ const ACTIONS = [
  *   stats: { 能力キー: 重み } （主能力1.0 / 副能力0.5など）
  *   special: 特殊効果ID / icon: 表示用絵文字
  * ========================================================= */
-const SPECIALTY_BASE = 40; // 友情コンボの基礎成長量（好感度ランク・コンボ・体調で増減）
+const SPECIALTY_BASE = 60; // 友情コンボの基礎成長量（好感度ランク・コンボ・体調で増減）
 
 const NPC_SPECIALTY = {
   onuma:      { stats: { gaku: 1.0 },             label: "勉強",       special: "efficient", icon: "📚" },
@@ -367,20 +367,20 @@ function activeComboFor(npcId, rel) {
   return null;
 }
 
-/* 好感度→成長倍率（知り合いでも少し手伝ってくれる/友達+20%/仲良し+50%/親友+100%） */
+/* 好感度→成長倍率（好感度が高いほど劇的に伸びる。好感度を稼ぐことがゲームの肝） */
 function affinityTier(r) {
-  if (r >= 81) return { mult: 2.0, label: "親友・特別な関係" };
-  if (r >= 61) return { mult: 1.5, label: "仲良し" };
-  if (r >= 31) return { mult: 1.2, label: "友達" };
-  return { mult: 1.1, label: "知り合い" };
+  if (r >= 81) return { mult: 3.0, label: "親友・特別な関係" };
+  if (r >= 61) return { mult: 2.0, label: "仲良し" };
+  if (r >= 31) return { mult: 1.4, label: "友達" };
+  return { mult: 1.15, label: "知り合い" };
 }
 
 /* 友情コンボが発生する確率（好感度が高いほど高確率）。友達ごとに個別抽選するため、
  *   条件を満たす友達が複数いれば同時に発生することもある。
  *   好感度0でもわずかに発動するので、プール全体では「誰かしら」が約5回に1回現れる。
- *   rel0→2% / 31→17% / 60→31% / 80→40% / 100→50%。恋人は別途下限50%に底上げ。 */
+ *   rel0→2% / 31→21% / 60→40% / 80→52% / 100→65%。恋人は別途下限50%に底上げ。 */
 function friendshipComboChance(r) {
-  return Math.min(0.55, 0.02 + (r / 100) * 0.48);
+  return Math.min(0.65, 0.02 + (r / 100) * 0.63);
 }
 
 /* =========================================================

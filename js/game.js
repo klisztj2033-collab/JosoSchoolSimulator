@@ -644,7 +644,7 @@ function doAction(actionId) {
   const relGain = {};
   if (combo) {
     for (const k in combo.fx) fx[k] = (fx[k] || 0) + combo.fx[k];
-    combo.ids.forEach(id => relGain[id] = (relGain[id] || 0) + 2); // 一緒に頑張ると少し仲良くなる
+    combo.ids.forEach(id => relGain[id] = (relGain[id] || 0) + 3); // 一緒に頑張ると少し仲良くなる
     comboText = "\n" + combo.text;
   }
 
