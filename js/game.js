@@ -116,6 +116,12 @@ function bgmPlay(key) {
   }
 }
 
+function sePlay(src, vol) {
+  const a = new Audio(src);
+  a.volume = vol !== undefined ? vol : 0.7;
+  a.play().catch(() => {});
+}
+
 function bgmForEvent(ev, isRandom) {
   if (ev && ev.bgm) return ev.bgm;               // 動的イベントは個別指定を優先
   if (isRandom) return RANDOM_BGM[ev.id] || "everyday";
@@ -753,6 +759,8 @@ function rollFriendshipCombo(stats, cond) {
     if (special) line += special;
     lines.push(line);
   }
+
+  if (joined.length >= 3) sePlay("se/combo_triple.mp3");
 
   let text = joined.length > 1
     ? "——そこへ、友達が次々と加わった！友情コンボ発生！\n" + lines.map(l => "・" + l).join("\n")
