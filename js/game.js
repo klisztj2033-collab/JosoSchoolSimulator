@@ -77,7 +77,7 @@ const ACTION_BGM = {
 
 let _bgmAudio = null;
 let _bgmKey   = null;
-const BGM_VOL   = 0.5;
+const BGM_VOL   = 0.25;
 const FADE_MS   = 600; // フェード総時間(ms)
 const FADE_STEP = 30;  // インターバル(ms)
 const FADE_N    = Math.round(FADE_MS / FADE_STEP);
