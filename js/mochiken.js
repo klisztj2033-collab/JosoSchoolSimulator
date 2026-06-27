@@ -235,6 +235,7 @@ function mochikenPlayer(next) {
   const target = heavy || carry[0];
 
   if (!rollFound(concealPlayer())) {
+    sePlay("se/ピューンと逃げる.mp3", 0.7);
     applyFx({ nori: 2, omoide: 2 });
     mochikenInfo("セーフ……！",
       `先生がカバンを開ける。心臓が跳ねる。\n` +
@@ -244,6 +245,7 @@ function mochikenPlayer(next) {
     return;
   }
 
+  sePlay("se/ショック1.mp3", 0.7);
   if (MOCHIKEN_ITEMS[target].severity === "heavy") mochikenPlayerHeavy(target, next);
   else mochikenPlayerLight(target, next);
 }

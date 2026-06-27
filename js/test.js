@@ -273,6 +273,7 @@ function applyRankEffect() {
  * ========================================================= */
 function startTestSequence() {
   showTestPrepScreen(() => {
+    sePlay("se/キーボードの早打ち1.mp3", 0.6);
     // テスト本番イベント（伊藤の放屁伝説は「確定」ではなく抽選で発生）
     showEvent(buildTestEvent(), () => {
       computeTestResults(); // 採点（順位は結果発表週まで伏せる）
@@ -292,7 +293,7 @@ function buildTestEvent() {
 
   if (fart) {
     return {
-      id: "test_ito_fart", place: "教室（テスト中）", bgm: "eerie",
+      id: "test_ito_fart", place: "教室（テスト中）", bgm: "eerie", se: "se/トイレを流す2.mp3",
       title: `${label}テスト — そして伝説へ`,
       text: `${label}テスト本番。教室は鉛筆の音しかしない極度の静寂に包まれている。\n\n` +
         "全員が真剣に問題と向き合う中、伊藤けいすけだけは開始10分で机に突っ伏して寝ていた。それだけでも十分すごいのだが——\n\n" +

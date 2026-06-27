@@ -122,6 +122,21 @@ function sePlay(src, vol) {
   a.play().catch(() => {});
 }
 
+const ACTION_SE = {
+  study:   "se/キーボード2.mp3",
+  sport:   "se/高校のグラウンド.mp3",
+  talk:    "se/高校の教室.mp3",
+  chaos:   "se/間抜け1.mp3",
+  explore: "se/街の道路.mp3",
+};
+const BUTTON_SE = [
+  "se/決定ボタンを押す1.mp3",
+  "se/決定ボタンを押す2.mp3",
+  "se/決定ボタンを押す37.mp3",
+  "se/決定ボタンを押す40.mp3",
+  "se/決定ボタンを押す51.mp3",
+];
+
 function bgmForEvent(ev, isRandom) {
   if (ev && ev.bgm) return ev.bgm;               // 動的イベントは個別指定を優先
   if (isRandom) return RANDOM_BGM[ev.id] || "everyday";
@@ -634,6 +649,7 @@ function showSickWeek() {
 function doAction(actionId) {
   const act = ACTIONS.find(a => a.id === actionId);
   bgmPlay(ACTION_BGM[actionId] || "everyday");
+  if (ACTION_SE[actionId]) sePlay(ACTION_SE[actionId], 0.65);
   S.lastAction = actionId;
 
   // 体調補正（プラス効果のみ倍率がかかる）＋ 高ランクほど伸びにくい収穫逓減
@@ -760,7 +776,7 @@ function rollFriendshipCombo(stats, cond) {
     lines.push(line);
   }
 
-  if (joined.length >= 3) sePlay("se/combo_triple.mp3");
+  if (joined.length >= 3) sePlay("se/secombo_triple.mp3");
 
   let text = joined.length > 1
     ? "——そこへ、友達が次々と加わった！友情コンボ発生！\n" + lines.map(l => "・" + l).join("\n")
@@ -820,6 +836,7 @@ function pickRandomEvent() {
 /* イベント表示（固定・ランダム共通／ADV形式） */
 function showEvent(ev, onDone, isRandom) {
   bgmPlay(bgmForEvent(ev, isRandom));
+  if (ev.se) sePlay(ev.se, 0.65);
   window.__currentEvent = ev;
   window.__onEventDone = onDone;
   showAdv({
@@ -839,6 +856,7 @@ function showEventChoices() {
 }
 
 function chooseEvent(idx) {
+  sePlay(pick(BUTTON_SE), 0.55);
   const ev = window.__currentEvent;
   const c = ev.choices[idx];
   const sfx = scaleStoryFx(c.fx);             // 物語効果は1000スケールへ

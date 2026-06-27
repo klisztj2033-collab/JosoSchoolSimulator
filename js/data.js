@@ -735,7 +735,7 @@ const WEEKLY_EVENTS = [
   /* ---- 7月1週: 野球応援（学校全体の一体感） ---- */
   {
     title: "野球応援 — 全校で一つになる夏",
-    place: "グラウンド / スタンド",
+    place: "グラウンド / スタンド", se: "se/金属バットで打つ1.mp3",
     text: "夏の県大会。常総といえば野球。今日は授業を早めに切り上げ、全校でアルプススタンドへ応援に向かう。\n\n" +
       "炎天下、ブラスバンドのチャンステーマが鳴り響き、メガホンを叩く音がスタンドを揺らす。\n" +
       "久野君はもう声が出ていないのに叫び続け、ちのね君までもが小さな声で「……がんばれ」とつぶやいている。\n" +
@@ -831,7 +831,7 @@ const WEEKLY_EVENTS = [
   /* ---- 10月1週: マラソン大会（洞峰公園） ---- */
   {
     title: "マラソン大会 — 洞峰公園",
-    place: "洞峰公園",
+    place: "洞峰公園", se: "se/自然公園1.mp3",
     text: "秋晴れの下、恒例のマラソン大会。会場はつくばの洞峰公園。池をぐるりと囲むコースを走る。\n\n" +
       "スタート前、石川君が「マラソンは孤独な競技。つまり俺向き」とまた言っている。なぜかこの男だけは長距離が異様に速い。\n" +
       "ちのね君はスタート前から「お腹痛い……」と顔面蒼白。久野君は「全員抜く!」と宣言して10秒後に後悔する顔をしている。\n" +
@@ -1146,7 +1146,7 @@ const RANDOM_EVENTS = [
   /* --- 石川 vs 西山（繰り返し可） --- */
   {
     id: "ishikawa_vs_nishiyama",
-    cond: () => true,
+    cond: () => true, se: "se/電車走行中1.mp3",
     title: "本日の石川西山口論",
     place: "帰りの電車",
     text: "帰りの電車。今日のお題は「きのこの山とたけのこの里」だった。\n\n" +
@@ -1443,7 +1443,7 @@ const RANDOM_EVENTS = [
 
   /* --- 安曽: ワンクリック詐欺30万円の相談 --- */
   {
-    id: "aso_scam", once: true, cond: (S) => S.week >= 4, bgm: "eerie",
+    id: "aso_scam", once: true, cond: (S) => S.week >= 4, bgm: "eerie", se: "se/携帯電話のバイブレーション1.mp3",
     title: "あんちゃん、30万円の危機",
     place: "教室",
     text: "昼休み、あんちゃんが珍しくダジャレも言わず、真っ青な顔で寄ってきた。\n" +
@@ -1458,7 +1458,7 @@ const RANDOM_EVENTS = [
 
   /* --- 西山: 不審者情報に載る --- */
   {
-    id: "nishiyama_runner", cond: (S) => S.week >= 2, bgm: "comedy",
+    id: "nishiyama_runner", cond: (S) => S.week >= 2, bgm: "comedy", se: "se/電車のブレーキ.mp3",
     title: "西山、不審者情報に載る",
     place: "帰りの電車",
     text: "帰りの電車で、西山君が深刻な顔で切り出した。\n" +
@@ -1877,7 +1877,7 @@ const RANDOM_EVENTS = [
 
   /* --- 高橋りょう: 突然の名言 --- */
   {
-    id: "takahashiR_meigen", cond: (S) => S.week >= 4, bgm: "everyday",
+    id: "takahashiR_meigen", cond: (S) => S.week >= 4, bgm: "everyday", se: "se/電車通過3.mp3",
     title: "高橋りょうの名言（？）",
     place: "帰りの電車",
     text: "帰りの電車。みんながスマホをいじる中、高橋りょう君が窓の外を眺めながら、ぽつりと言った。\n" +
@@ -2192,7 +2192,7 @@ const RANDOM_EVENTS = [
 
   /* --- 帰りの電車、隣に座るのは？ --- */
   {
-    id: "train_seat_pick", cond: (S) => S.lastAction === "station" || S.week >= 2, bgm: "everyday",
+    id: "train_seat_pick", cond: (S) => S.lastAction === "station" || S.week >= 2, bgm: "everyday", se: "se/駅改札口.mp3",
     title: "帰りの電車 — 隣の席",
     place: "常磐線",
     text: "下校の常磐線。ボックス席に空きがあり、見知った顔がちらほら座っている。\n\n" +
